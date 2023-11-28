@@ -26,5 +26,4 @@ public abstract class Expr extends AST {
 	public void setType(Type type) {
 		this.type = type;
 	}
-	
 }

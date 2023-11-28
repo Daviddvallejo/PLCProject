@@ -110,13 +110,11 @@ public class 	Parser implements IParser {
 		List<Block.BlockElem> elems = new ArrayList<>();
 		while(!isKind(BLOCK_CLOSE)) {
 			if(isKind(IDENT, RES_write, RES_if, RES_do, RETURN, BLOCK_OPEN)){
-//				System.out.println("Statement");
 				Statement statement = Statement();
 				elems.add(statement);
 				match(SEMI);
 			}
 			else{
-//				System.out.println("Declaration");
 				Declaration declaration = Declaration();
 				elems.add(declaration);
 				match(SEMI);
@@ -146,7 +144,6 @@ public class 	Parser implements IParser {
 			consume();
 		}
 		else if (isKind(LSQUARE)) {
-//			System.out.println("made it");
 			dimension = Dimension();
 			if (isKind(IDENT)) {
 				ident = t;
@@ -428,22 +425,17 @@ public class 	Parser implements IParser {
 	private Statement Statement() throws PLCCompilerException {
 		IToken firstToken = t;
 		if(isKind(IDENT)){
-//			System.out.println("Assignment");
 			LValue LValue = LValue();
-			System.out.println(t.text());
-			//System.out.println(t.text());
 			match(ASSIGN);
 			Expr expr = expr();
 			return new AssignmentStatement(firstToken, LValue, expr);
 		}
 		else if (isKind(RES_write)) {
-//			System.out.println("write");
 			consume();
 			Expr expr = expr();
 			return new WriteStatement(firstToken, expr);
 		}
 		else if (isKind(RES_do)) {
-//			System.out.println("do");
 			consume();
 			List<GuardedBlock> guardedBlocks = new ArrayList<>();
 			GuardedBlock guardedBlock = GuardedBlock();
@@ -457,7 +449,6 @@ public class 	Parser implements IParser {
 			return new DoStatement(firstToken, guardedBlocks);
 		}
 		else if (isKind(RES_if)) {
-//			System.out.println("if");
 			consume();
 			List<GuardedBlock> guardedBlocks = new ArrayList<>();
 			GuardedBlock guardedBlock = GuardedBlock();
@@ -471,13 +462,11 @@ public class 	Parser implements IParser {
 			return new IfStatement(firstToken, guardedBlocks);
 		}
 		else if (isKind(RETURN)) {
-//			System.out.println("Return");
 			consume();
 			Expr expr = expr();
 			return new ReturnStatement(firstToken, expr);
 		}
 		else {
-//			System.out.println("Block");
 			Block block = BlockStatement();
 			return new StatementBlock(firstToken, block);
 		}
