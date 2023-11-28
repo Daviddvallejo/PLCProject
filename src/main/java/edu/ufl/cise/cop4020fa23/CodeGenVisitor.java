@@ -102,7 +102,7 @@ public class CodeGenVisitor implements ASTVisitor {
         int paramSize = program.getParams().size();
         source.append("public class ");
         source.append(program.getName());
-        source.append("{ \n public static ");
+        source.append("{ \n\tpublic static ");
         source.append(program.getType());
         source.append(" apply(");
         for(NameDef i : program.getParams()){
@@ -132,9 +132,10 @@ public class CodeGenVisitor implements ASTVisitor {
             if(paramSize > 1 && i != program.getParams().get(paramSize - 1)) {
                 source.append(", ");
             }
-            
         }
         source.append(")\n");
+        program.getBlock().visit(this, arg);
+        source.append("}");
         System.out.println(source.toString());
         throw new CodeGenException("visitProgram not implemented yet");
     }
