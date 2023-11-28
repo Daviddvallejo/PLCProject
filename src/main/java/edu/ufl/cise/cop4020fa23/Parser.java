@@ -310,6 +310,7 @@ public class 	Parser implements IParser {
 			}
 			if (isKind(COLON)) {
 				channel = ChannelSelector();
+				consume();
 			}
 			return new PostfixExpr(firstToken, primary, pixel, channel);
 		}
@@ -356,8 +357,8 @@ public class 	Parser implements IParser {
 	}
 
 	private ChannelSelector ChannelSelector() throws PLCCompilerException {
-		IToken firstToken = t;
 		match(COLON);
+		IToken firstToken = t;
 		if (isKind(RES_red, RES_green, RES_blue)){
 			return new ChannelSelector(firstToken, t);
 		}

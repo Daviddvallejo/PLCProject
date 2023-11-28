@@ -2,10 +2,8 @@ package edu.ufl.cise.cop4020fa23;
 
 import edu.ufl.cise.cop4020fa23.ast.NameDef;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Stack;
-import java.util.Map;
+import java.util.*;
+
 import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
 import org.apache.commons.lang3.tuple.Pair;
 public class SymbolTable {
@@ -26,8 +24,20 @@ public class SymbolTable {
     public void closeScope()
     {
         current_num = scope_stack.pop();
+        Iterator<Map.Entry<Integer, Pair<Integer, NameDef>>> iterator = table.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, Pair<Integer, NameDef>> entry = iterator.next();
+            Pair<Integer, NameDef> pair = entry.getValue();
+
+            if (pair.getLeft().equals(current_num)) {
+                // Remove the entry if Pair.getLeft() is equal to the target integer
+                iterator.remove();
+            }
+        }
         current_num--;
         next_num--;
+
+
     }
 
     public void insert(String key, Pair<Integer, NameDef> attribute) throws TypeCheckException {
