@@ -174,6 +174,7 @@ public class Lexer implements ILexer {
 				}
 				case LETTER ->{
 					if ((currentChar >= 65 && currentChar <= 90) || (currentChar >= 97 && currentChar <= 122) || currentChar == '_' || (currentChar >= 48 && currentChar <= 57)) {
+
 					}
 					else{
 						if (currentChar == ' ' || currentChar == '\t' || currentChar == '\n' || currentChar == '\r') {

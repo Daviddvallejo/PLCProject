@@ -37,7 +37,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
-        System.out.println("BinaryExpr");
         Expr leftExpr = binaryExpr.getLeftExpr();
         Expr rightExpr = binaryExpr.getRightExpr();
         leftExpr.setType((Type) leftExpr.visit(this,arg));
@@ -104,7 +103,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitConditionalExpr(ConditionalExpr conditionalExpr, Object arg) throws PLCCompilerException {
-        System.out.println("ConditionalExpr");
         Expr guardExpr = conditionalExpr.getGuardExpr();
         Expr trueExpr = conditionalExpr.getTrueExpr();
         Expr falseExpr = conditionalExpr.getFalseExpr();
@@ -127,7 +125,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
-        System.out.println("declaration");
         Expr expr = declaration.getInitializer();
         NameDef nameDef = declaration.getNameDef();
         Type exprType = null;
@@ -176,7 +173,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitExpandedPixelExpr(ExpandedPixelExpr expandedPixelExpr, Object arg) throws PLCCompilerException {
-        System.out.println("expandedPixelExpr");
         Expr red = expandedPixelExpr.getRed();
         Expr blue = expandedPixelExpr.getBlue();
         Expr green = expandedPixelExpr.getGreen();
@@ -231,7 +227,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
         String name = lValue.getName();
-        System.out.println("visitLValue");
         lValue.setNameDef(symbolTable.lookup(name));
         Type type = lValue.getNameDef().getType();
         lValue.setType(type);
@@ -269,7 +264,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
-        System.out.println("namDef");
         Type type = nameDef.getType();
         Pair<Integer, NameDef> pair = Pair.of(symbolTable.current_num, nameDef);
         if(nameDef.getDimension() != null){
@@ -286,7 +280,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitNumLitExpr(NumLitExpr numLitExpr, Object arg) throws PLCCompilerException {
-        System.out.println("numLit");
         Type type = Type.INT;
         numLitExpr.setType(type);
         return type;
@@ -296,7 +289,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
         Expr xExpr = pixelSelector.xExpr();
         Expr yExpr = pixelSelector.yExpr();
-        System.out.println("visitPixelSelector");
         if(arg != null && arg.equals(true)){
             if(!(xExpr.firstToken.kind() == Kind.IDENT || xExpr.firstToken.kind() == Kind.NUM_LIT)){
                 //.out.println(xExpr.firstToken.kind());
@@ -332,7 +324,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws PLCCompilerException {
-        System.out.println("postfix Expr");
         Expr expr = postfixExpr.primary();
         expr.setType((Type) expr.visit(this,arg));
         postfixExpr.setType(inferPostfixExprType(expr, postfixExpr.pixel(), postfixExpr.channel(), arg));
@@ -394,7 +385,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitStringLitExpr(StringLitExpr stringLitExpr, Object arg) throws PLCCompilerException {
-        System.out.println("StringLit Expr");
         stringLitExpr.setType(Type.STRING);
         return stringLitExpr.getType();
     }
@@ -406,7 +396,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
     public Type inferUnaryExpr(Expr expr, Kind op) throws TypeCheckException{
-        System.out.println("inferUnary");
         Type exprType = expr.getType();
         if(exprType == Type.BOOLEAN && op == Kind.BANG){
             return Type.BOOLEAN;
@@ -428,14 +417,12 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
-        System.out.println("booleanLit expr");
         booleanLitExpr.setType(Type.BOOLEAN);
         return Type.BOOLEAN;
     }
 
     @Override
     public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException {
-        System.out.println("constExpr");
         String name = constExpr.getName();
         if(name.equals("Z")){
             constExpr.setType(Type.INT);
