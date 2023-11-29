@@ -198,6 +198,7 @@ public class CodeGenVisitor implements ASTVisitor {
             source.append(declaration.getNameDef().getJavaName());
             source.append(" = ");
             declaration.getInitializer().visit(this, arg);
+            declaration.getInitializer().visit(this, arg);
             source.append(";\n");
         }
         else{
