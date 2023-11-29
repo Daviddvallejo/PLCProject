@@ -265,6 +265,10 @@ public class TypeCheckVisitor implements ASTVisitor {
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
         Type type = nameDef.getType();
+        String javaName = nameDef.getName() +
+                "$" +
+                symbolTable.current_num;
+        nameDef.setJavaName(javaName);
         Pair<Integer, NameDef> pair = Pair.of(symbolTable.current_num, nameDef);
         if(nameDef.getDimension() != null){
             type = Type.IMAGE;

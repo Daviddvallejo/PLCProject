@@ -6,8 +6,9 @@ import java.util.*;
 
 import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
 import org.apache.commons.lang3.tuple.Pair;
+
 public class SymbolTable {
-    private HashMap<Integer, Pair<Integer, NameDef>> table = new HashMap<>();
+    private HashMap<Integer, ArrayList<Pair<Integer, NameDef>>> table = new HashMap<>();
     private  Stack<Integer> scope_stack = new Stack<Integer>();
      int current_num;
      int next_num;
@@ -24,15 +25,17 @@ public class SymbolTable {
     public void closeScope()
     {
         current_num = scope_stack.pop();
-        Iterator<Map.Entry<Integer, Pair<Integer, NameDef>>> iterator = table.entrySet().iterator();
+        Iterator<Map.Entry<Integer, ArrayList<Pair<Integer, NameDef>>>> iterator = table.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<Integer, Pair<Integer, NameDef>> entry = iterator.next();
-            Pair<Integer, NameDef> pair = entry.getValue();
-
-            if (pair.getLeft().equals(current_num)) {
-                // Remove the entry if Pair.getLeft() is equal to the target integer
-                iterator.remove();
+            Map.Entry<Integer, ArrayList<Pair<Integer, NameDef>>> entry = iterator.next();
+            ArrayList<Pair<Integer, NameDef>> pairList = entry.getValue();
+            for (Iterator<Pair<Integer, NameDef>> listIterator = pairList.iterator(); listIterator.hasNext(); ) {
+                Pair<Integer, NameDef> pair = listIterator.next();
+                if (pair.getLeft().equals(current_num)) {
+                    listIterator.remove();
+                }
             }
+
         }
         current_num--;
         next_num--;
@@ -41,23 +44,28 @@ public class SymbolTable {
     }
 
     public void insert(String key, Pair<Integer, NameDef> attribute) throws TypeCheckException {
-        Pair<Integer, NameDef> value = table.get(key.hashCode());
-        if(table.containsKey(key.hashCode()) && value.getLeft() == current_num){
-            throw new TypeCheckException("Name already in SymbolTable");
+        if(table.containsKey(key.hashCode())) {
+            ArrayList<Pair<Integer, NameDef>> pairList = table.get(key.hashCode());
+            for (Pair<Integer, NameDef> i : pairList) {
+                if (i.getLeft() == current_num) {
+                    throw new TypeCheckException("Name already in SymbolTable");
+                }
+            }
+            pairList.add(attribute);
         }
         else{
-            table.put(key.hashCode(), attribute);
+            table.put(key.hashCode(), new ArrayList<>());
+            ArrayList<Pair<Integer, NameDef>> pairList = table.get(key.hashCode());
+            pairList.add(attribute);
         }
     }
     NameDef lookup(String name) throws TypeCheckException {
-        for (Map.Entry<Integer, Pair<Integer, NameDef>> entry : table.entrySet()) {
-            int key = entry.getKey().hashCode();
-            Pair<Integer, NameDef>  value = entry.getValue();
-            if(key == name.hashCode()){
-                for(int i = current_num; i >= 0; i--){
-                    if(i == value.getLeft()){
-                        return value.getRight();
-                    }
+        if(table.containsKey(name.hashCode())){
+            ArrayList<Pair<Integer, NameDef>> pairList = table.get(name.hashCode());
+            pairList.sort(Comparator.comparing(Pair::getLeft, Comparator.reverseOrder()));
+            for (Pair<Integer, NameDef> i : pairList) {
+                if (i.getLeft() <= current_num) {
+                    return i.getRight();
                 }
             }
         }
