@@ -6,10 +6,12 @@ import edu.ufl.cise.cop4020fa23.exceptions.CodeGenException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
 import edu.ufl.cise.cop4020fa23.runtime.PixelOps;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Stack;
 
 public class CodeGenVisitor implements ASTVisitor {
 
@@ -22,6 +24,8 @@ public class CodeGenVisitor implements ASTVisitor {
     boolean pixel = false;
     boolean file = false;
     boolean bufImage = false;
+
+    Stack<Integer> contStack = new Stack<Integer>();
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
         source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
@@ -51,27 +55,31 @@ public class CodeGenVisitor implements ASTVisitor {
         }
         else if(ltype == Type.IMAGE){
             if(pixelSelector != null && channelSelector == null) {
-                source.append("for(int ");
-                assignmentStatement.getlValue().getPixelSelector().xExpr().visit(this, arg);
-                source.append(" = 0; ");
-                assignmentStatement.getlValue().getPixelSelector().xExpr().visit(this, arg);
-                source.append(" < ");
-                assignmentStatement.getlValue().getNameDef().visit(this, "assignment");
-                source.append(".getWidth(); ");
-                assignmentStatement.getlValue().getPixelSelector().xExpr().visit(this, arg);
-                source.append("++){\n");
-                symbolTable.enterScope();
-                source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-                source.append("for(int ");
-                assignmentStatement.getlValue().getPixelSelector().yExpr().visit(this, arg);
-                source.append(" = 0; ");
-                assignmentStatement.getlValue().getPixelSelector().yExpr().visit(this, arg);
-                source.append(" < ");
-                assignmentStatement.getlValue().getNameDef().visit(this, "assignment");
-                source.append(".getHeight(); ");
-                assignmentStatement.getlValue().getPixelSelector().yExpr().visit(this, arg);
-                source.append("++){\n");
-                symbolTable.enterScope();
+                if(assignmentStatement.getlValue().getPixelSelector().xExpr().getClass() == IdentExpr.class){
+                    source.append("for(int ");
+                    assignmentStatement.getlValue().getPixelSelector().xExpr().visit(this, arg);
+                    source.append(" = 0; ");
+                    assignmentStatement.getlValue().getPixelSelector().xExpr().visit(this, arg);
+                    source.append(" < ");
+                    assignmentStatement.getlValue().getNameDef().visit(this, "assignment");
+                    source.append(".getWidth(); ");
+                    assignmentStatement.getlValue().getPixelSelector().xExpr().visit(this, arg);
+                    source.append("++){\n");
+                    symbolTable.enterScope();
+                }
+                if(assignmentStatement.getlValue().getPixelSelector().yExpr().getClass() == IdentExpr.class) {
+                    source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
+                    source.append("for(int ");
+                    assignmentStatement.getlValue().getPixelSelector().yExpr().visit(this, arg);
+                    source.append(" = 0; ");
+                    assignmentStatement.getlValue().getPixelSelector().yExpr().visit(this, arg);
+                    source.append(" < ");
+                    assignmentStatement.getlValue().getNameDef().visit(this, "assignment");
+                    source.append(".getHeight(); ");
+                    assignmentStatement.getlValue().getPixelSelector().yExpr().visit(this, arg);
+                    source.append("++){\n");
+                    symbolTable.enterScope();
+                }
                 source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
                 source.append("ImageOps.setRGB(");
                 assignmentStatement.getlValue().getNameDef().visit(this, "assignment");
@@ -82,18 +90,47 @@ public class CodeGenVisitor implements ASTVisitor {
                 source.append(", ");
                 assignmentStatement.getE().visit(this,arg);
                 source.append(");\n");
-                symbolTable.closeScope();
-                source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-                source.append("}\n");
-                symbolTable.closeScope();
-                source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-                source.append("}\n");
+                if(assignmentStatement.getlValue().getPixelSelector().yExpr().getClass() == IdentExpr.class) {
+                    symbolTable.closeScope();
+                    source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
+                    source.append("}\n");
+                }
+                if(assignmentStatement.getlValue().getPixelSelector().xExpr().getClass() == IdentExpr.class){
+                    symbolTable.closeScope();
+                    source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
+                    source.append("}\n");
+                }
                 image = true;
                 bufImage = true;
                 return assignmentStatement;
             }
+            else if(channelSelector != null){
+                throw new UnsupportedOperationException();
+            }
             else{
-                throw new CodeGenException("not implemented yet");
+                if(assignmentStatement.getE().getType() == Type.IMAGE){
+                    source.append("ImageOps.copyInto(");
+                    assignmentStatement.getE().visit(this, arg);
+                    source.append(", ");
+                    assignmentStatement.getlValue().visit(this, arg);
+                    source.append(")");
+                }
+                else if(assignmentStatement.getE().getType() == Type.PIXEL){
+                    source.append("ImageOps.setAllPixels(");
+                    assignmentStatement.getlValue().visit(this, arg);
+                    source.append(", ");
+                    assignmentStatement.getE().visit(this, arg);
+                    source.append(")");
+                }
+                else if(assignmentStatement.getE().getType() == Type.STRING){
+                    source.append("ImageOps.copyInto(");
+                    source.append("FileURLIO.readImage(");
+                    assignmentStatement.getE().visit(this, arg);
+                    source.append("), ");
+                    assignmentStatement.getlValue().visit(this, arg);
+                    source.append(")");
+                    file = true;
+                }
             }
         }
         else {
@@ -110,15 +147,16 @@ public class CodeGenVisitor implements ASTVisitor {
         Expr left = binaryExpr.getLeftExpr();
         Kind op = binaryExpr.getOpKind();
         Expr right = binaryExpr.getRightExpr();
-        source.append("(");
         //source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
         if(left.getType() == Type.STRING && op == Kind.EQ){
+            source.append("(");
             left.visit(this,arg);
             source.append(".equals(");
             right.visit(this,arg);
             source.append(")");
         }
         else if(op == Kind.EXP){
+            source.append("(");
             math = true;
             source.append("((int)Math.round(Math.pow(");
             left.visit(this,arg);
@@ -127,8 +165,8 @@ public class CodeGenVisitor implements ASTVisitor {
             source.append(")))");
         }
         else{
-            //source.append("(");
             if(binaryExpr.getType() == Type.PIXEL && left.getType() == Type.PIXEL && right.getType() == Type.PIXEL){
+                source.append("(");
                 source.append("ImageOps.binaryPackedPixelPixelOp(");
                 source.append("ImageOps.OP.");
                 source.append(binaryExpr.getOpKind());
@@ -140,6 +178,7 @@ public class CodeGenVisitor implements ASTVisitor {
                 source.append(")");
             }
             else if(binaryExpr.getType() == Type.PIXEL && left.getType() == Type.PIXEL && right.getType() == Type.INT){
+                source.append("(");
                 source.append("ImageOps.binaryPackedPixelIntOp(");
                 source.append("ImageOps.OP.");
                 source.append(binaryExpr.getOpKind());
@@ -151,6 +190,7 @@ public class CodeGenVisitor implements ASTVisitor {
                 source.append(")");
             }
             else if(binaryExpr.getType() == Type.IMAGE && left.getType() == Type.IMAGE && right.getType() == Type.IMAGE){
+                source.append("(");
                 source.append("ImageOps.binaryImageImageOp(");
                 source.append("ImageOps.OP.");
                 source.append(binaryExpr.getOpKind());
@@ -162,6 +202,7 @@ public class CodeGenVisitor implements ASTVisitor {
                 source.append(")");
             }
             else if(binaryExpr.getType() == Type.IMAGE && left.getType() == Type.IMAGE && right.getType() == Type.PIXEL){
+                source.append("(");
                 source.append("ImageOps.binaryImagePixelOp(");
                 source.append("ImageOps.OP.");
                 source.append(binaryExpr.getOpKind());
@@ -172,7 +213,17 @@ public class CodeGenVisitor implements ASTVisitor {
                 image = true;
                 source.append(")");
             }
+            else if(binaryExpr.getType() == Type.IMAGE && left.getType() == Type.IMAGE && right.getType() == Type.INT){
+                source.append("ImageOps.cloneImage((ImageOps.binaryImageScalarOp(ImageOps.OP.");
+                source.append(op.name());
+                source.append(", ");
+                left.visit(this,arg);
+                source.append(", ");
+                right.visit(this, arg);
+                source.append("))");
+            }
             else {
+                source.append("(");
                 left.visit(this, arg);
                 source.append(" ");
                 kind2String(op);
@@ -284,15 +335,11 @@ public class CodeGenVisitor implements ASTVisitor {
         List<Block.BlockElem> blockElems = block.getElems();
         source.append("{\n");
         for (Block.BlockElem elem : blockElems) {
-            if(arg == "do"){
-                source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-                source.append("continue$0 = true;\n");
-            }
+
             elem.visit(this, arg);
         }
         source.append("\t".repeat(Math.max(0, symbolTable.current_num)));
         source.append("}");
-
         return block;
     }
 
@@ -312,7 +359,9 @@ public class CodeGenVisitor implements ASTVisitor {
             source.append(channelSelector.firstToken().text());
         }
         else {
-            throw new CodeGenException("visitChannelSelector aspect not implemented yet");
+            pixel = true;
+            source.append("PixelOps.");
+            source.append(channelSelector.firstToken().text());
         }
         return channelSelector;
     }
@@ -341,7 +390,7 @@ public class CodeGenVisitor implements ASTVisitor {
                 image = true;
                 declaration.getInitializer().visit(this, "image");
             }
-            else if(declaration.getNameDef().getType() == Type.IMAGE && declaration.getNameDef().getDimension() != null){
+            else if(declaration.getNameDef().getType() == Type.IMAGE && declaration.getNameDef().getDimension() != null && declaration.getInitializer().getType() != Type.STRING){
                 source.append("ImageOps.copyAndResize(");
                 declaration.getInitializer().visit(this, arg);
                 source.append(", ");
@@ -350,6 +399,15 @@ public class CodeGenVisitor implements ASTVisitor {
                 declaration.getNameDef().getDimension().getHeight().visit(this, arg);
                 source.append(")");
                 image = true;
+            }
+            else if(declaration.getNameDef().getType() == Type.IMAGE && declaration.getNameDef().getDimension() != null && declaration.getInitializer().getType() == Type.STRING){
+                bufImage = true;
+                image = true;
+                declaration.getInitializer().visit(this, "imageWithDimension");
+                declaration.getNameDef().getDimension().getWidth().visit(this, arg);
+                source.append(", ");
+                declaration.getNameDef().getDimension().getHeight().visit(this, arg);
+                source.append(")");
             }
             else {
                 declaration.getInitializer().visit(this, arg);
@@ -382,9 +440,14 @@ public class CodeGenVisitor implements ASTVisitor {
     @Override
     public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException {
         source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-        source.append("boolean continue$0 = false;\n");
+        contStack.push(symbolTable.current_num);
+        source.append("boolean continue$");
+        source.append(contStack.peek());
+        source.append(" = false;\n");
         source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-        source.append("while(!continue$0){\n");
+        source.append("while(!continue$");
+        source.append(contStack.peek());
+        source.append("){\n");
         symbolTable.enterScope();
         List<GuardedBlock> guardList = doStatement.getGuardedBlocks();
         int guardSize = guardList.size();
@@ -394,14 +457,26 @@ public class CodeGenVisitor implements ASTVisitor {
             if(guardSize > 1 && guardBlock != guardList.get(0)) {
                 source.append("\n");
                 source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-                source.append("if(");
+                source.append("else if(");
             }
             guardBlock.visit(this,"do");
         }
+        source.append("\n");
+        source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
+        source.append("else{\n");
+        symbolTable.enterScope();
+        source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
+        source.append("continue$");
+        source.append(contStack.peek());
+        source.append(" = true");
         source.append(";\n");
-        source.append("\t".repeat(Math.max(0, symbolTable.current_num)));
-        source.append("}");
         symbolTable.closeScope();
+        source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
+        source.append("}\n");
+        source.append("\t".repeat(Math.max(0, symbolTable.current_num)));
+        source.append("}\n");
+        symbolTable.closeScope();
+        contStack.pop();
         return doStatement;
     }
 
@@ -448,6 +523,12 @@ public class CodeGenVisitor implements ASTVisitor {
             source.append("FileURLIO.readImage(");
             source.append(identExpr.getNameDef().getJavaName());
             source.append(")");
+            file = true;
+        }
+        else if(arg == "imageWithDimension" && nameDefType == Type.STRING){
+            source.append("FileURLIO.readImage(");
+            source.append(identExpr.getNameDef().getJavaName());
+            source.append(", ");
             file = true;
         }
         else if(arg == "image" && nameDefType == Type.IMAGE){
@@ -513,12 +594,17 @@ public class CodeGenVisitor implements ASTVisitor {
 
     @Override
     public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
-        throw new CodeGenException("visitPixelSelector not implemented yet");
+        pixelSelector.xExpr().visit(this,arg);
+        source.append(", ");
+        pixelSelector.yExpr().visit(this,arg);
+        return pixelSelector;
     }
 
     @Override
     public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws PLCCompilerException {
         Type eType = postfixExpr.primary().getType();
+        PixelSelector pixelSelector = postfixExpr.pixel();
+        ChannelSelector channelSelector = postfixExpr.channel();
         if(eType == Type.PIXEL){
             postfixExpr.channel().visit(this,"pixelPostFix");
             source.append("(");
@@ -526,9 +612,46 @@ public class CodeGenVisitor implements ASTVisitor {
             source.append(")");
         }
         else{
-            throw new CodeGenException("eType: Image not implemented yet in postFixExpr");
+            if(pixelSelector != null && channelSelector == null){
+                source.append("ImageOps.getRGB(");
+                postfixExpr.primary().visit(this,arg);
+                source.append(", ");
+                pixelSelector.visit(this,arg);
+                source.append(")");
+                image = true;
+            }
+            else if(pixelSelector != null){
+                channelSelector.visit(this,arg);
+                source.append("(ImageOps.getRGB(");
+                postfixExpr.primary().visit(this,arg);
+                source.append(", ");
+                pixelSelector.visit(this,arg);
+                source.append("))");
+                image = true;
+            }
+            else if(channelSelector != null){
+                String color = color2ID(channelSelector.firstToken.text());
+                source.append("ImageOps.extract");
+                source.append(color);
+                source.append("(");
+                postfixExpr.primary().visit(this,arg);
+                source.append(")");
+                image = true;
+            }
         }
         return postfixExpr;
+    }
+
+    String color2ID(String s){
+        switch(s) {
+            case "red":
+                return "Red";
+            case "blue":
+                return "Blu";
+            case "green":
+                return "Grn";
+        }
+        return "";
     }
 
     @Override
@@ -585,6 +708,7 @@ public class CodeGenVisitor implements ASTVisitor {
                 break;
             case ("IMAGE"):
                 source.append("BufferedImage");
+                bufImage = true;
                 break;
             case ("VOID"):
                 source.append("void");
@@ -615,13 +739,22 @@ public class CodeGenVisitor implements ASTVisitor {
 
     @Override
     public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws PLCCompilerException {
-//        source.append("\t".repeat(Math.max(0, symbolTable.next_num)));
-//        source.append("(");
-        kind2String(unaryExpr.getOp());
-        source.append("(");
-        unaryExpr.getExpr().visit(this,arg);
-        source.append(")");
-//        source.append(")");
+        if(unaryExpr.getOp() == Kind.RES_width){
+            source.append("(");
+            unaryExpr.getExpr().visit(this, arg);
+            source.append(".getWidth())");
+        }
+        else if(unaryExpr.getOp() == Kind.RES_height) {
+            source.append("(");
+            unaryExpr.getExpr().visit(this, arg);
+            source.append(".getHeight())");
+        }
+        else {
+            kind2String(unaryExpr.getOp());
+            source.append("(");
+            unaryExpr.getExpr().visit(this, arg);
+            source.append(")");
+        }
         return unaryExpr;
     }
 
