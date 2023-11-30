@@ -28,7 +28,7 @@ class CodeGenTest_Hw5_starter {
 	// makes it easy to turn output on and off (and less typing than
 	// System.out.println)
 	static final boolean VERBOSE = true;
-	static final boolean WAIT_FOR_INPUT = true;
+	static final boolean WAIT_FOR_INPUT = false;
 
 	void show(Object obj) {
 		if (VERBOSE) {
@@ -388,8 +388,19 @@ class CodeGenTest_Hw5_starter {
 
 	/**
 	 *
-	 * package edu.ufl.cise.cop4020fa23; public class f{ public static int apply(){
-	 * int x$2=3; if(x$2>2){ } else if(true){ x$2=(x$2+1); } ; return x$2; } }
+	 * package edu.ufl.cise.cop4020fa23;
+	 * public class f{
+		 * public static int apply(){
+			 * int x$2=3;
+			 * if(x$2>2){
+			 *
+			 * }
+				 * else if(true){
+				 * x$2=(x$2+1);
+			 * };
+			 * return x$2;
+		 * }
+	 * }
 	 * 
 	 * @throws Exception
 	 */
@@ -437,8 +448,9 @@ class CodeGenTest_Hw5_starter {
 	}
 
 	/*
-	 * package edu.ufl.cise.cop4020fa23; public class gcd{ public static int
-	 * apply(int a$1, int b$1){ {boolean continue$0= false; while(!continue$0){
+	 * package edu.ufl.cise.cop4020fa23;
+	 * public class gcd{
+	 * public static int apply(int a$1, int b$1){ {boolean continue$0= false; while(!continue$0){
 	 * continue$0=true; if(a$1<b$1){ continue$0 = false; { b$1=(b$1-a$1); } }
 	 * if(b$1<a$1){ continue$0 = false; { a$1=(a$1-b$1); } } } }; return a$1; } }
 	 */
@@ -461,9 +473,11 @@ class CodeGenTest_Hw5_starter {
 
 	/**
 	 * package edu.ufl.cise.cop4020fa23; import java.awt.image.BufferedImage; import
-	 * edu.ufl.cise.cop4020fa23.runtime.ImageOps; public class makeImage{ public
-	 * static BufferedImage apply(int w$1, int h$1){ final BufferedImage
-	 * im$2=ImageOps.makeImage(w$1,h$1); for (int x$3=0; x$3<im$2.getWidth();x$3++){
+	 * edu.ufl.cise.cop4020fa23.runtime.ImageOps;
+	 * public class makeImage{
+	 * public static BufferedImage apply(int w$1, int h$1){
+	 * final BufferedImage im$2=ImageOps.makeImage(w$1,h$1);
+	 * for (int x$3=0; x$3<im$2.getWidth();x$3++){
 	 * for (int y$3=0; y$3<im$2.getHeight();y$3++){
 	 * ImageOps.setRGB(im$2,x$3,y$3,(y$3>(h$1/2)?0xff0000ff:0xff00ff00)); } };
 	 * return im$2; } }
@@ -693,5 +707,6 @@ class CodeGenTest_Hw5_starter {
 				w, h);
 		compareImages(expected, image);
 	}
+
 
 }

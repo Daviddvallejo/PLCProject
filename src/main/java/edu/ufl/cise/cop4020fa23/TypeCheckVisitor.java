@@ -188,7 +188,7 @@ public class TypeCheckVisitor implements ASTVisitor {
             throw new TypeCheckException("expandedPixelExpr error");
         }
         expandedPixelExpr.setType(Type.PIXEL);
-        return expandedPixelExpr;
+        return expandedPixelExpr.getType();
     }
 
     @Override
@@ -230,6 +230,7 @@ public class TypeCheckVisitor implements ASTVisitor {
         lValue.setNameDef(symbolTable.lookup(name));
         Type type = lValue.getNameDef().getType();
         lValue.setType(type);
+        type = lValue.getType();
         lValue.setType(inferLValueType(type, lValue.getPixelSelector(), lValue.getChannelSelector()));
         if(lValue.getPixelSelector() != null){
             lValue.getPixelSelector().visit(this, true);
@@ -237,7 +238,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         if(lValue.getChannelSelector() != null){
             lValue.getChannelSelector().visit(this, arg);
         }
-
         return lValue;
     }
 
@@ -248,13 +248,13 @@ public class TypeCheckVisitor implements ASTVisitor {
         else if(lValue == Type.IMAGE && pixelSelector != null && channelSelector == null){
             return Type.PIXEL;
         }
-        else if(lValue == Type.IMAGE && pixelSelector != null && channelSelector != null){
+        else if(lValue == Type.IMAGE && pixelSelector != null){
             return Type.INT;
         }
-        else if(lValue == Type.IMAGE && pixelSelector == null && channelSelector != null){
+        else if(lValue == Type.IMAGE){
             return Type.IMAGE;
         }
-        else if(lValue == Type.PIXEL && pixelSelector == null && channelSelector != null){
+        else if(lValue == Type.PIXEL && pixelSelector == null){
             return Type.INT;
         }
         else{
@@ -265,9 +265,7 @@ public class TypeCheckVisitor implements ASTVisitor {
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
         Type type = nameDef.getType();
-        String javaName = nameDef.getName() +
-                "$" +
-                symbolTable.current_num;
+        String javaName = nameDef.getName() + "$" + symbolTable.current_num;
         nameDef.setJavaName(javaName);
         Pair<Integer, NameDef> pair = Pair.of(symbolTable.current_num, nameDef);
         if(nameDef.getDimension() != null){
@@ -305,12 +303,16 @@ public class TypeCheckVisitor implements ASTVisitor {
                 SyntheticNameDef nameDef = new SyntheticNameDef(xExpr.firstToken().text());
                 Pair<Integer, NameDef> pair = Pair.of(symbolTable.current_num, nameDef);
                 symbolTable.insert(xExpr.firstToken().text(),pair);
+                String javaName = nameDef.getName() + "$" + symbolTable.current_num;
+                nameDef.setJavaName(javaName);
                 xExpr.setType(Type.INT);
             }
             if(yExpr.firstToken.kind() == Kind.IDENT && symbolTable.lookup(yExpr.firstToken().text()) == null){
                 SyntheticNameDef nameDef = new SyntheticNameDef(yExpr.firstToken().text());
                 Pair<Integer, NameDef> pair = Pair.of(symbolTable.current_num, nameDef);
                 symbolTable.insert(yExpr.firstToken().text(),pair);
+                String javaName = nameDef.getName() + "$" + symbolTable.current_num;
+                nameDef.setJavaName(javaName);
                 yExpr.setType(Type.INT);
             }
         }
