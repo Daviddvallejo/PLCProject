@@ -6,10 +6,8 @@ import edu.ufl.cise.cop4020fa23.exceptions.CodeGenException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
 import edu.ufl.cise.cop4020fa23.runtime.PixelOps;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.awt.*;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Stack;
 

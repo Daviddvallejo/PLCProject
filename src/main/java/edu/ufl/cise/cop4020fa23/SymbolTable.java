@@ -69,7 +69,6 @@ public class SymbolTable {
                 }
             }
         }
-        System.out.println("Name not in SymbolTable");
         return null;
     }
 }
